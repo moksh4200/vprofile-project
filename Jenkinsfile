@@ -7,7 +7,7 @@ pipeline {
     }
 */
     environment {
-        registry = "imranvisualpath/vproappdock"
+        registry = "moksh4200/kopsapp"
         registryCredential = 'dockerhub'
     }
 
@@ -36,18 +36,29 @@ pipeline {
                 sh 'mvn verify -DskipUnitTests'
             }
         }
+	    
+	    stage('CODE ANALYSIS with SONARQUBE') {
 
-        stage ('CODE ANALYSIS WITH CHECKSTYLE'){
+            environment {
+                scannerHome = tool 'sonar-kops'
+            }
+
             steps {
-                sh 'mvn checkstyle:checkstyle'
-            }
-            post {
-                success {
-                    echo 'Generated Analysis Result'
+                    sh '''${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=kops-project \
+                   -Dsonar.projectName=vprofile-repo \
+                   -Dsonar.projectVersion=1.0 \
+                   -Dsonar.sources=src/ \
+                   -Dsonar.java.binaries=target/test-classes/com/visualpathit/account/controllerTest/ \
+                   -Dsonar.junit.reportsPath=target/surefire-reports/ \
+                   -Dsonar.jacoco.reportsPath=target/jacoco.exec \
+                   -Dsonar.host.url=http://3.109.214.61'''
                 }
-            }
-        }
 
+                timeout(time: 10, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+		}
+	    }
+	    }
 
         stage('Building image') {
             steps{
@@ -74,33 +85,11 @@ pipeline {
           }
         }
 
-        stage('CODE ANALYSIS with SONARQUBE') {
-
-            environment {
-                scannerHome = tool 'mysonarscanner4'
-            }
-
-            steps {
-                withSonarQubeEnv('sonar-pro') {
-                    sh '''${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=vprofile \
-                   -Dsonar.projectName=vprofile-repo \
-                   -Dsonar.projectVersion=1.0 \
-                   -Dsonar.sources=src/ \
-                   -Dsonar.java.binaries=target/test-classes/com/visualpathit/account/controllerTest/ \
-                   -Dsonar.junit.reportsPath=target/surefire-reports/ \
-                   -Dsonar.jacoco.reportsPath=target/jacoco.exec \
-                   -Dsonar.java.checkstyle.reportPaths=target/checkstyle-result.xml'''
-                }
-
-                timeout(time: 10, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
-                }
-            }
-        }
+        
         stage('Kubernetes Deploy') {
 	  agent { label 'KOPS' }
             steps {
-                    sh "helm upgrade --install --force vproifle-stack helm/vprofilecharts --set appimage=${registry}:${BUILD_NUMBER} --namespace prod"
+                    sh "helm upgrade --install --force kops-stack helm/vprofilecharts --set appimage=${registry}:${BUILD_NUMBER} --namespace prod"
             }
         }
 
