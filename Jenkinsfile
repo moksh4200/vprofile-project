@@ -53,10 +53,6 @@ pipeline {
                    -Dsonar.jacoco.reportsPath=target/jacoco.exec \
                    -Dsonar.host.url=http://3.109.214.61'''
                 }
-
-                timeout(time: 10, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
-		}
 	    }
 	    
 
