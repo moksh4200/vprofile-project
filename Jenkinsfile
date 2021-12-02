@@ -58,7 +58,7 @@ pipeline {
                     waitForQualityGate abortPipeline: true
 		}
 	    }
-	    }
+	    
 
         stage('Building image') {
             steps{
